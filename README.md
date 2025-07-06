@@ -215,8 +215,8 @@ public class MybatisMetaObjectHandler implements MetaObjectHandler {
   ```
   Header: { "alg": "HS256", "typ": "JWT" }
   Payload: { "userId": 123}
-```
--**自定义拦截器**
+  ```
+- **自定义拦截器**
 ```java
 public class JwtTokenAdminInterceptor implements HandlerInterceptor {
     @Autowired
