@@ -68,7 +68,7 @@
 ### 2. 分布式一致性解决方案
 - **库存超卖防护**
 - **一人一单实现**
-- 仅基于乐观锁加互斥锁版本
+- 🌟仅基于乐观锁加互斥锁版本
 ```java
  普通秒杀，查询数据库版本
     @Override
@@ -125,25 +125,20 @@
         }
         //6. 创建订单
         TbVoucherOrder voucherOrder = new TbVoucherOrder();
-        //6.1 设置订单id
-        long orderId = redisIdWorker.nextId("order");
-        //6.2 设置用户id
-        //6.3 设置代金券id
-        voucherOrder.setVoucherId(voucherId);
-        voucherOrder.setId(orderId);
-        voucherOrder.setUserId(BaseContext.getCurrentId());
-        //7. 将订单数据保存到表中
+        //省略赋值过程
         voucherOrderMapper.insert(voucherOrder);
         //8. 返回订单id
         return Result.success(String.valueOf(orderId));
     }
 ```
-- **基于Redis原子操作与RabbitMQ版本**
+- **🌟🌟🌟基于Redis原子操作与RabbitMQ版本**
 ```java
     @Override
     public Result<String> seckillVoucher(Long voucherId) {
         // 1.查询优惠券是否存在
-        TbSeckillVoucher voucher = JSON.parseObject(stringRedisTemplate.opsForValue().get("seckill:voucher:" + voucherId), TbSeckillVoucher.class);
+        String seckillKey = "seckillHave:voucher:" + voucherId;
+        String stockKey = "stock:voucher:" + voucherId;
+        TbSeckillVoucher voucher = JSON.parseObject(stringRedisTemplate.opsForValue().get(seckillKey), TbSeckillVoucher.class);
         if (voucher == null) {
             return Result.error("秒杀活动不存在!");
         }
@@ -156,7 +151,6 @@
             return Result.error("秒杀已结束!");
         }
         // 3. Redis预减库存（原子操作）
-        String stockKey = "stock:voucher:" + voucherId;
         Long stock = stringRedisTemplate.opsForValue().decrement(stockKey);
         // 处理库存对应情况
         if (stock == null) {
@@ -168,17 +162,13 @@
             return Result.error("库存不足!");
         }
         //4.判断用户是否重复下单
-        Long add = stringRedisTemplate.opsForSet().add("seckillHave:voucher:" + voucherId, String.valueOf(BaseContext.getCurrentId()));
+        Long add = stringRedisTemplate.opsForSet().add(seckillKey, String.valueOf(BaseContext.getCurrentId()));
         if (add == 0) {
             stringRedisTemplate.opsForValue().increment(stockKey);
-            return Result.error("不可重复抢购");
-        }
+            return Result.error("不可重复抢购");}
         //5.进行下单
-        long orderId = redisIdWorker.nextId("order");
         TbVoucherOrder voucherOrder = new TbVoucherOrder();
-        voucherOrder.setVoucherId(voucherId);
-        voucherOrder.setId(orderId);
-        voucherOrder.setUserId(BaseContext.getCurrentId());
+        //省略赋值过程
         //6.发送对象给rabbit队列
         String queueName = "OrderQueue";
         rabbitTemplate.convertAndSend(queueName,voucherOrder);
@@ -186,7 +176,7 @@
         return Result.success(String.valueOf(orderId));
     }
 ```
-> *注：优惠券发放采用异步化处理后，接口响应速度提升显著
+> *注*：优惠券发放采用异步化处理后，接口响应速度提升显著
 
 ### 3. 安全与效率优化
 - **无状态认证**：JWT Token设计
