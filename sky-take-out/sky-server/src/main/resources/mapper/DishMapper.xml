@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.sky.mapper.DishMapper">
+    <select id="pageSelectWithCategoryName" resultType="com.sky.vo.DishPageVO">
+        select d.id,
+               d.name,
+               d.category_id,
+               d.price,
+               d.image,
+               d.description,
+               d.status,
+               d.create_time,
+               d.update_time,
+               d.create_user,
+               d.update_user,
+               c.type,
+               c.name category_name,
+               c.sort,
+               c.status
+        from dish d
+                 left join category c on d.category_id = c.id
+        <where>
+        <if test="dishPageQueryDTO.name != null and dishPageQueryDTO.name != ''">
+            AND d.name LIKE CONCAT('%', #{dishPageQueryDTO.name}, '%')
+        </if>
+        <if test="dishPageQueryDTO.categoryId != null">
+            AND d.category_id = #{dishPageQueryDTO.categoryId}
+        </if>
+        <if test="dishPageQueryDTO.status != null">
+            AND d.status = #{dishPageQueryDTO.status}
+        </if>
+        </where>
+    </select>
+    <resultMap id="dishVo" type="com.sky.vo.DishVO" autoMapping="true">
+        <id  column="id" property="id"/>
+        <result column="category_name" property="categoryName"/>
+        <collection property="flavors" ofType="com.sky.entity.DishFlavor" autoMapping="true">
+            <id column="flavor_id" property="id"/>
+            <result column="flavor_name" property="name"/>
+            <result column="flavor_value" property="value"/>
+            <result column="flavor_dish_id" property="dishId"/>
+        </collection>
+    </resultMap>
+    <select id="listWithFlavor" resultMap="dishVo" >
+        select d.id,
+               d.name,
+               d.category_id,
+               d.price,
+               d.image,
+               d.description,
+               d.status,
+               d.create_time,
+               d.update_time,
+               d.create_user,
+               d.update_user,
+               df.id AS flavor_id,           -- 添加别名避免ID冲突
+               df.dish_id AS flavor_dish_id, -- 添加别名
+               df.name AS flavor_name,       -- 添加别名避免名称冲突
+               df.value AS flavor_value,
+               c.name category_name
+        from dish d
+                 left join dish_flavor df on d.id = df.dish_id
+                 left join category c on d.category_id = c.id
+        where category_id = #{categoryId}
+          and d.status = 1
+    </select>
+</mapper>
+

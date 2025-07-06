@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sky.mapper.SetmealMapper">
+    <select id="getDishIdBySetmealId" resultType="java.lang.Long">
+        SELECT dish_id from setmeal_dish where setmeal_id = #{id}
+    </select>
+    <select id="getDishItemVoBySetmealId" resultType="com.sky.vo.DishItemVO">
+        select
+            sd.name,
+            sd.copies,
+            d.image,
+            d.description
+        from setmeal_dish sd
+                 left join dish d on sd.dish_id = d.id and sd.setmeal_id = #{id}
+    </select>
+</mapper>

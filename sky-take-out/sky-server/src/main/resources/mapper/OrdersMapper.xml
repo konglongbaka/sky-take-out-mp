@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sky.mapper.OrdersMapper">
+    <resultMap id="oderPageVo" type="com.sky.vo.OrderPageVO" autoMapping="true">
+        <id column="id" property="id"/>
+        <collection property="orderDetailList" ofType="com.sky.entity.OrderDetail" autoMapping="true">
+            <id column="id" property="id"/>
+            <result column="order_number" property="number"/>
+        </collection>
+     </resultMap>
+
+    <select id="pageHistoryOrdersQuery" resultMap="oderPageVo">
+        select d.id,
+               d.number,
+               d.status,
+               d.user_id,
+               d.address_book_id,
+               d.order_time,
+               d.checkout_time,
+               d.pay_method,
+               d.pay_status,
+               d.amount,
+               d.remark,
+               d.phone,
+               d.address,
+               d.user_name,
+               d.consignee,
+               d.cancel_reason,
+               d.rejection_reason,
+               d.cancel_time,
+               d.estimated_delivery_time,
+               d.delivery_status,
+               d.delivery_time,
+               d.pack_amount,
+               d.tableware_number,
+               d.tableware_status,
+               od.id,
+               od.name,
+               od.image,
+               od.order_id,
+               od.dish_id,
+               od.setmeal_id,
+               od.dish_flavor,
+               od.number order_number,
+               od.amount
+        from orders d
+                 left join order_detail od on d.id = od.order_id
+        <where>
+            d.user_id = #{ordersPageQueryDTO.userId}
+            <!-- 订单状态查询 -->
+            <if test="ordersPageQueryDTO.status != null">
+                AND status = #{ordersPageQueryDTO.status}
+            </if>
+        </where>
+    </select>
+</mapper>

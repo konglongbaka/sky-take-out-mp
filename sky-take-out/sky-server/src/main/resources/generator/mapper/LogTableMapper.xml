@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sky.mapper.LogTableMapper">
+
+    <resultMap id="BaseResultMap" type="generator.entity.LogTable">
+            <id property="id" column="id" />
+            <result property="userId" column="user_id" />
+            <result property="className" column="class_name" />
+            <result property="createTime" column="create_time" />
+            <result property="logMessage" column="log_message" />
+            <result property="methodName" column="method_name" />
+            <result property="params" column="params" />
+            <result property="return" column="return" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,user_id,class_name,create_time,log_message,method_name,
+        params,return
+    </sql>
+</mapper>
