@@ -209,12 +209,41 @@ public class MybatisMetaObjectHandler implements MetaObjectHandler {
         return Result.ok(result);
     }
 ```
-### 5. 安全与效率优化
-- **无状态认证**：JWT Token设计
+## ✨其余实现
+### 安全与效率优化
+- **无状态认证**：
+- JWT Token设计
   ```
   Header: { "alg": "HS256", "typ": "JWT" }
-  Payload: { "userId": 123, "role": "ADMIN" }
+  Payload: { "userId": 123}
   ```
+-自定义拦截器
+```java
+public class JwtTokenAdminInterceptor implements HandlerInterceptor {
+    @Autowired
+    private JwtProperties jwtProperties;
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        //判断当前拦截到的是Controller的方法还是其他资源
+        if (!(handler instanceof HandlerMethod)) return true;
+        //1、从请求头中获取令牌
+        String token = request.getHeader(jwtProperties.getAdminTokenName());
+        //2、校验令牌
+        try {
+            log.info("jwt校验:{}", token);
+            Claims claims = JwtUtil.parseJWT(jwtProperties.getAdminSecretKey(), token);
+            Long empId = Long.valueOf(claims.get(JwtClaimsConstant.EMP_ID).toString());
+            log.info("当前员工id：", empId);
+            BaseContext.setCurrentId(empId);
+            //3、通过，放行
+            return true;
+        } catch (Exception ex) {
+            //4、不通过，响应401状态码
+            response.setStatus(401);
+            return false;
+        }
+    }
+}
+```
 - **全局异常处理**：统一返回格式
   ```json
   {
