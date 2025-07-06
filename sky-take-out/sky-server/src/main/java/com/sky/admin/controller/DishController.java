@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sky.anno.Log;
+import com.sky.constant.CacheNamesConstant;
 import com.sky.context.BaseContext;
 import com.sky.exception.BaseException;
 import com.sky.service.CategoryService;
@@ -23,6 +24,7 @@ import com.sky.vo.DishPageVO;
 import com.sky.vo.DishVO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -97,6 +99,7 @@ public class DishController {
     }
 
     @PostMapping
+    @CacheEvict(cacheNames = CacheNamesConstant.USERDISH,key = "#dishDTO.getCategoryId()")
     public Result<String> addDish(@RequestBody DishDTO dishDTO) {
         dishService.saveDishWithFlavors(dishDTO);
         return Result.success();
@@ -105,6 +108,7 @@ public class DishController {
     @DeleteMapping
     @Log
     @Transactional
+    @CacheEvict(cacheNames = CacheNamesConstant.USERDISH,allEntries = true)
     public Result<String> delete(@RequestParam List<Long> ids) {
         ids.forEach(id -> {
             List<SetmealDish> list = setmealDishService.list(new LambdaQueryWrapper<SetmealDish>().in(SetmealDish::getDishId, ids));
@@ -120,6 +124,7 @@ public class DishController {
     }
 
     @PutMapping
+    @CacheEvict(cacheNames = CacheNamesConstant.USERDISH,key = "#dishDTO.getCategoryId()")
     public Result<String> update(@RequestBody DishDTO dishDTO) {
         dishService.updateDishWithFlavors(dishDTO);
         return Result.success();
@@ -128,6 +133,7 @@ public class DishController {
     @PostMapping("status/{status}")
     @Log
     @Transactional
+    @CacheEvict(cacheNames = CacheNamesConstant.USERDISH,allEntries = true)
     public Result<String> updateStatus(@PathVariable Integer status, Long id) {
         LambdaUpdateWrapper<Dish> dishLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
         dishLambdaUpdateWrapper.eq(Dish::getId,id);

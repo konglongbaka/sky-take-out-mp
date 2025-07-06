@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sky.config.RedissionConfig;
+import com.sky.constant.CacheNamesConstant;
 import com.sky.constant.JwtClaimsConstant;
 import com.sky.constant.PasswordConstant;
 import com.sky.context.BaseContext;
@@ -18,12 +19,14 @@ import com.sky.result.Result;
 import com.sky.service.EmployeeService;
 import com.sky.utils.JwtUtil;
 import com.sky.utils.PasswordUtil;
-import com.sky.utils.RedisTimeUtil;
+import com.sky.utils.RandomTimeUtil;
+
 import com.sky.vo.EmployeeLoginVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.BooleanUtils;
 import org.redisson.api.RLock;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
@@ -45,7 +48,6 @@ public class EmployeeController {
     private EmployeeService employeeService;
     @Autowired
     private RedisTemplate<String,Object> redisTemplate;
-    private static final String EMP_KEY = "EMP:";
     @Autowired
     private JwtProperties jwtProperties;
     @Autowired
@@ -105,6 +107,7 @@ public class EmployeeController {
     }
 
     @PostMapping
+    @CacheEvict(cacheNames = CacheNamesConstant.ADMINEMP, allEntries = true)
     public Result<String> save(@RequestBody Employee employee){
         log.info("新增员工：{}",employee);
         if (employee.getPassword()==null){
@@ -114,7 +117,7 @@ public class EmployeeController {
         return Result.success();
     }
     @GetMapping("/page")
-    @Cacheable(cacheNames = "userCache", key = "'user'+#page")
+    @Cacheable(cacheNames = CacheNamesConstant.ADMINEMP , key = "'emp'+#page")
     public Result<IPage<Employee>> page(Integer page, Integer pageSize, String name){
         log.info("分页查询：{}",page,pageSize,name);
         long current = page;
@@ -128,6 +131,7 @@ public class EmployeeController {
     }
 
     @PostMapping(("/status/{status}"))
+    @CacheEvict(cacheNames = CacheNamesConstant.ADMINEMP, allEntries = true)
     public Result<String> startOrStop(@PathVariable Integer status,Long id){
         log.info("员工状态：{}",status,id);
         LambdaUpdateWrapper<Employee> lambdaUpdateWrapper = new LambdaUpdateWrapper<>();
@@ -137,6 +141,7 @@ public class EmployeeController {
         return Result.success();
     }
     @PutMapping("/editPassword")
+    @CacheEvict(cacheNames = CacheNamesConstant.ADMINEMP + "id:", key = "#passwordEditDTO.getEmpId()")
     public Result<String> editPassword(@RequestBody PasswordEditDTO passwordEditDTO){
         log.info("修改密码：{}",passwordEditDTO);
         Employee employee = employeeService.getById(passwordEditDTO.getEmpId());
@@ -150,9 +155,9 @@ public class EmployeeController {
     }
 
     @GetMapping("/{id}")
-    @Cacheable(cacheNames = "user:id", key = "'user'+#id")
+    @Cacheable(cacheNames = CacheNamesConstant.ADMINEMP + "id:", key = "#id")
     public Result<Employee> getById(@PathVariable Long id) throws InterruptedException {
-        String key = EMP_KEY + id;
+        String key = CacheNamesConstant.ADMINEMP + id;
         String json = (String) redisTemplate.opsForValue().get(key);
         if(json!=null){
             if (json.isEmpty()){
@@ -161,8 +166,7 @@ public class EmployeeController {
             Employee jsonObject= JSON.parseObject(json, Employee.class);
             return Result.success(jsonObject);
         }
-
-        String lockKey = EMP_KEY + "lockKey:" + id;
+        String lockKey = CacheNamesConstant.ADMINEMP + "lockKey:" + id;
         RLock rLock = redissionConfig.redissonClient().getLock(lockKey);
         boolean lock = rLock.tryLock(1,20, TimeUnit.SECONDS);
         if (!lock){
@@ -174,13 +178,14 @@ public class EmployeeController {
             rLock.unlock();
             return Result.error("未找到该员工");
         }
-        redisTemplate.opsForValue().set(key,JSON.toJSONString(employee));
-        RedisTimeUtil.setRandomExpiration(key, TimeUnit.SECONDS);
+        //设置过期时间随机
+        redisTemplate.opsForValue().set(key,JSON.toJSONString(employee), RandomTimeUtil.getRandom(),TimeUnit.SECONDS);
         rLock.unlock();
         return Result.success(employee);
     }
 
     @PutMapping
+    @CacheEvict(cacheNames = CacheNamesConstant.ADMINEMP + "id:", key = "#employee.getId()")
     public Result<String> update(@RequestBody Employee employee){
         log.info("员工修改：{}",employee);
         LambdaUpdateWrapper<Employee> lambdaUpdateWrapper = new LambdaUpdateWrapper<>();
