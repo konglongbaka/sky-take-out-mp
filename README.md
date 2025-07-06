@@ -177,8 +177,54 @@
     }
 ```
 > *注*：优惠券发放采用异步化处理后，接口响应速度提升显著
-
-### 3. 安全与效率优化
+### 3. 异步日志记录
+-出现异常时，整个事务回滚导致不会有任何的日志产生？
+-同样可以利用异步进行解决！
+```java
+public Object logAround(ProceedingJoinPoint joinPoint) {
+        LogTable logEntity = new LogTable();
+        logEntity.setCreateTime(new Date());
+        logEntity.setMethodName(joinPoint.getSignature().getName());
+        logEntity.setClassName(joinPoint.getTarget().getClass().getName());
+        logEntity.setParams(Arrays.toString(joinPoint.getArgs()));
+        logEntity.setUserId(BaseContext.getCurrentId());
+        try {
+            Object result = joinPoint.proceed();
+            logEntity.setLogMessage("成功");
+            logEntity.setReturnMessage(result.toString());
+            rabbitTemplate.convertAndSend(LOG_QUEUE, logEntity);
+            return result;
+        } catch (Throwable e) {
+            logEntity.setLogMessage("失败");
+            logEntity.setReturnMessage(e.getMessage());
+            rabbitTemplate.convertAndSend(LOG_QUEUE, logEntity);
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+```
+### 4. 更高效的开发MyBatis-Plus
+```java
+// 自动填充通用字段
+public class MybatisMetaObjectHandler implements MetaObjectHandler {
+    @Override
+    public void insertFill(MetaObject metaObject) {
+        this.strictInsertFill(metaObject, "createTime", Date.class, new Date());}
+    @Override
+    public void updateFill(MetaObject metaObject) {
+        this.strictUpdateFill(metaObject, "updateTime", Date.class, new Date());}
+}
+//分页查询
+    @GetMapping("page")
+    public Result<IPage<UserInfo>> pageUserInfo(@RequestParam long current, @RequestParam long size, UserInfoQueryVo queryVo) {
+        IPage<UserInfo> page = new Page<>(current,size);
+        LambdaQueryWrapper<UserInfo> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(UserInfo::getPhone,queryVo.getPhone());
+        lambdaQueryWrapper.eq(UserInfo::getStatus,queryVo.getStatus());
+        IPage<UserInfo> result = userInfoService.page(page,lambdaQueryWrapper);
+        return Result.ok(result);
+    }
+```
+### 5. 安全与效率优化
 - **无状态认证**：JWT Token设计
   ```
   Header: { "alg": "HS256", "typ": "JWT" }
@@ -192,3 +238,10 @@
     "data": null
   }
   ```
+🛠️ 部署指南
+环境要求
+JDK 17+
+
+MySQL 8.0+
+
+Redis 7.x+
