@@ -209,8 +209,7 @@ public class MybatisMetaObjectHandler implements MetaObjectHandler {
         return Result.ok(result);
     }
 ```
-## ✨其余实现
-### 安全与效率优化
+## 登录校验等其余实现仍基于苍穹外卖
 - **无状态认证**：
 - JWT Token设计
   ```
