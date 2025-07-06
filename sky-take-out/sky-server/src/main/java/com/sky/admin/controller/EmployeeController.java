@@ -18,6 +18,7 @@ import com.sky.result.Result;
 import com.sky.service.EmployeeService;
 import com.sky.utils.JwtUtil;
 import com.sky.utils.PasswordUtil;
+import com.sky.utils.RedisTimeUtil;
 import com.sky.vo.EmployeeLoginVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.BooleanUtils;
@@ -173,7 +174,8 @@ public class EmployeeController {
             rLock.unlock();
             return Result.error("未找到该员工");
         }
-        redisTemplate.opsForValue().set(key,JSON.toJSONString(employee), 1000, TimeUnit.SECONDS);
+        redisTemplate.opsForValue().set(key,JSON.toJSONString(employee));
+        RedisTimeUtil.setRandomExpiration(key, TimeUnit.SECONDS);
         rLock.unlock();
         return Result.success(employee);
     }
