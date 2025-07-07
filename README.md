@@ -163,7 +163,8 @@
         return Result.success(String.valueOf(orderId));
     }
 ```
-![Uploading Redis.png…]()
+![Redis](https://github.com/user-attachments/assets/f5302aee-82c2-42ab-9db6-39993f308d1b)
+
 
 > *注*：优惠券发放采用异步化处理后，接口响应速度提升398%
 ### 3. 异步日志记录
