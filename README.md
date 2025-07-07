@@ -116,6 +116,8 @@
         return Result.success(String.valueOf(orderId));
     }
 ```
+![image](https://github.com/user-attachments/assets/b6a0365a-42b8-451e-b050-e943aba134fd)
+
 - **🌟🌟🌟基于Redis原子操作与RabbitMQ版本**
 ```java
     @Override
@@ -161,7 +163,9 @@
         return Result.success(String.valueOf(orderId));
     }
 ```
-> *注*：优惠券发放采用异步化处理后，接口响应速度提升显著
+![Uploading Redis.png…]()
+
+> *注*：优惠券发放采用异步化处理后，接口响应速度提升398%
 ### 3. 异步日志记录
 -出现异常时，整个事务回滚导致不会有任何的日志产生？
 -同样可以利用异步进行解决！
