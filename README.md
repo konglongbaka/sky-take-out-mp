@@ -58,7 +58,7 @@
  普通秒杀，查询数据库版本
     @Override
     public Result<String> seckillVoucher(Long voucherId) throws InterruptedException {
-        // 1.查询优惠券是否存在
+        // 1.查询优惠券
         TbSeckillVoucher voucher = seckillVoucherService.getById(voucherId);
         // 2.判断秒杀是否开始
         if (voucher.getBeginTime().isAfter(LocalDateTime.now())) {
